@@ -1,6 +1,11 @@
-# Render ALL of Manjhi2 (2781 frames) as 20 parallel chunk jobs on the
+# Render ALL of Manjhi2 (2781 frames) as 14 parallel chunk jobs on the
 # public repo's 4 vCPU / 16 GB runners. One dispatch = the whole wave.
 # Each job uploads its chunk as an artifact; stitching happens locally.
+# Backend: --gl=angle-egl (Mesa llvmpipe). Calibration 2026-11-24:
+#   run A (default/swangle) 75.5 s/frame, run B (angle-egl) 61.9 s/frame,
+#   pixels match (frame 10 mean abs diff 0.23, frame 25 0.53; both < 1).
+#   Chunk size 200 = floor(18000 / 61.9) clamped to [80, 200].
+#   200 frames x 61.9 s ~= 3.4 h per job, inside the 355 min timeout.
 name: Render wave — Manjhi2
 
 on:
@@ -14,26 +19,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {frames: "0-139", out: "chunk-0000.mp4"}
-          - {frames: "140-279", out: "chunk-0140.mp4"}
-          - {frames: "280-419", out: "chunk-0280.mp4"}
-          - {frames: "420-559", out: "chunk-0420.mp4"}
-          - {frames: "560-699", out: "chunk-0560.mp4"}
-          - {frames: "700-839", out: "chunk-0700.mp4"}
-          - {frames: "840-979", out: "chunk-0840.mp4"}
-          - {frames: "980-1119", out: "chunk-0980.mp4"}
-          - {frames: "1120-1259", out: "chunk-1120.mp4"}
-          - {frames: "1260-1399", out: "chunk-1260.mp4"}
-          - {frames: "1400-1539", out: "chunk-1400.mp4"}
-          - {frames: "1540-1679", out: "chunk-1540.mp4"}
-          - {frames: "1680-1819", out: "chunk-1680.mp4"}
-          - {frames: "1820-1959", out: "chunk-1820.mp4"}
-          - {frames: "1960-2099", out: "chunk-1960.mp4"}
-          - {frames: "2100-2239", out: "chunk-2100.mp4"}
-          - {frames: "2240-2379", out: "chunk-2240.mp4"}
-          - {frames: "2380-2519", out: "chunk-2380.mp4"}
-          - {frames: "2520-2659", out: "chunk-2520.mp4"}
-          - {frames: "2660-2780", out: "chunk-2660.mp4"}
+          - {frames: "0-199", out: "chunk-0000.mp4"}
+          - {frames: "200-399", out: "chunk-0200.mp4"}
+          - {frames: "400-599", out: "chunk-0400.mp4"}
+          - {frames: "600-799", out: "chunk-0600.mp4"}
+          - {frames: "800-999", out: "chunk-0800.mp4"}
+          - {frames: "1000-1199", out: "chunk-1000.mp4"}
+          - {frames: "1200-1399", out: "chunk-1200.mp4"}
+          - {frames: "1400-1599", out: "chunk-1400.mp4"}
+          - {frames: "1600-1799", out: "chunk-1600.mp4"}
+          - {frames: "1800-1999", out: "chunk-1800.mp4"}
+          - {frames: "2000-2199", out: "chunk-2000.mp4"}
+          - {frames: "2200-2399", out: "chunk-2200.mp4"}
+          - {frames: "2400-2599", out: "chunk-2400.mp4"}
+          - {frames: "2600-2780", out: "chunk-2600.mp4"}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -45,7 +44,7 @@ jobs:
           npx remotion render src/index.ts Manjhi2
           out/${{ matrix.out }}
           --frames=${{ matrix.frames }}
-          --concurrency=2 --timeout=900000 --crf=18
+          --concurrency=2 --timeout=900000 --crf=18 --gl=angle-egl
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.out }}
