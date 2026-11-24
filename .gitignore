@@ -1,0 +1,5 @@
+node_modules/
+out/
+*.log
+manjhi3d-src.tar.gz
+browser_downloads/

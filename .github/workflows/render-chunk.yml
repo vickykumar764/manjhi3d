@@ -1,0 +1,42 @@
+# Render one frame-range chunk of a Remotion composition on a GitHub runner.
+# Triggered manually with inputs (workflow_dispatch). Used only if the GPU
+# route is unavailable — see render-escalation.md (free-tier minutes are
+# far too small for the whole video on CPU).
+name: Render chunk
+
+on:
+  workflow_dispatch:
+    inputs:
+      composition:
+        description: "Composition id (e.g. Manjhi2)"
+        required: true
+        default: "Manjhi2"
+      frames:
+        description: "Frame range, e.g. 0-347"
+        required: true
+        default: "0-347"
+      out:
+        description: "Output file name"
+        required: true
+        default: "chunk-0.mp4"
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Render chunk
+        run: >
+          npx remotion render src/index.ts ${{ inputs.composition }}
+          out/${{ inputs.out }}
+          --frames=${{ inputs.frames }}
+          --concurrency=1 --timeout=900000 --crf=18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.out }}
+          path: out/${{ inputs.out }}
