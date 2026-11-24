@@ -1,0 +1,53 @@
+# Render ALL of BridgeHindi (2171 frames, 72.37 s — the SAME template
+# Bridge staging retimed to the 8 Hindi narration segments in
+# voice-bridge/timing.json, audio public/voice-bridge.wav) as 11 parallel
+# chunk jobs on the public repo's 4 vCPU / 16 GB runners. One dispatch =
+# the whole wave. Each job uploads its chunk as an artifact; stitching
+# (with the Hindi voice) happens locally.
+# Settings copied from the proven Manjhi2 wave (run 45399663363):
+#   --gl=angle-egl (Mesa llvmpipe, 61.9 s/frame calibrated 2026-11-24,
+#   pixels match default), --concurrency=2, crf 18, chunks of 200 frames
+#   (~3.4 h per job worst case, inside the 355 min timeout).
+# This is the VOICED companion to the silent BridgeRef wave (run
+# 45465120232): comparing the two shows the full method — visuals from
+# the template code, voice added separately on top.
+name: Render wave — BridgeHindi
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {frames: "0-199", out: "chunk-h0000.mp4"}
+          - {frames: "200-399", out: "chunk-h0200.mp4"}
+          - {frames: "400-599", out: "chunk-h0400.mp4"}
+          - {frames: "600-799", out: "chunk-h0600.mp4"}
+          - {frames: "800-999", out: "chunk-h0800.mp4"}
+          - {frames: "1000-1199", out: "chunk-h1000.mp4"}
+          - {frames: "1200-1399", out: "chunk-h1200.mp4"}
+          - {frames: "1400-1599", out: "chunk-h1400.mp4"}
+          - {frames: "1600-1799", out: "chunk-h1600.mp4"}
+          - {frames: "1800-1999", out: "chunk-h1800.mp4"}
+          - {frames: "2000-2170", out: "chunk-h2000.mp4"}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Render chunk ${{ matrix.frames }}
+        run: >
+          npx remotion render src/index.ts BridgeHindi
+          out/${{ matrix.out }}
+          --frames=${{ matrix.frames }}
+          --concurrency=2 --timeout=900000 --crf=18 --gl=angle-egl
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.out }}
+          path: out/${{ matrix.out }}
