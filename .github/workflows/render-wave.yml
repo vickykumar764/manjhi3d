@@ -1,0 +1,52 @@
+# Render ALL of Manjhi2 (2781 frames) as 20 parallel chunk jobs on the
+# public repo's 4 vCPU / 16 GB runners. One dispatch = the whole wave.
+# Each job uploads its chunk as an artifact; stitching happens locally.
+name: Render wave — Manjhi2
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {frames: "0-139", out: "chunk-0000.mp4"}
+          - {frames: "140-279", out: "chunk-0140.mp4"}
+          - {frames: "280-419", out: "chunk-0280.mp4"}
+          - {frames: "420-559", out: "chunk-0420.mp4"}
+          - {frames: "560-699", out: "chunk-0560.mp4"}
+          - {frames: "700-839", out: "chunk-0700.mp4"}
+          - {frames: "840-979", out: "chunk-0840.mp4"}
+          - {frames: "980-1119", out: "chunk-0980.mp4"}
+          - {frames: "1120-1259", out: "chunk-1120.mp4"}
+          - {frames: "1260-1399", out: "chunk-1260.mp4"}
+          - {frames: "1400-1539", out: "chunk-1400.mp4"}
+          - {frames: "1540-1679", out: "chunk-1540.mp4"}
+          - {frames: "1680-1819", out: "chunk-1680.mp4"}
+          - {frames: "1820-1959", out: "chunk-1820.mp4"}
+          - {frames: "1960-2099", out: "chunk-1960.mp4"}
+          - {frames: "2100-2239", out: "chunk-2100.mp4"}
+          - {frames: "2240-2379", out: "chunk-2240.mp4"}
+          - {frames: "2380-2519", out: "chunk-2380.mp4"}
+          - {frames: "2520-2659", out: "chunk-2520.mp4"}
+          - {frames: "2660-2780", out: "chunk-2660.mp4"}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - name: Render chunk ${{ matrix.frames }}
+        run: >
+          npx remotion render src/index.ts Manjhi2
+          out/${{ matrix.out }}
+          --frames=${{ matrix.frames }}
+          --concurrency=2 --timeout=900000 --crf=18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.out }}
+          path: out/${{ matrix.out }}
